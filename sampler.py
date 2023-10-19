@@ -38,9 +38,11 @@ class Sampler:
             cur += torch.sqrt(self.betas[t]) * torch.randn(cur.shape, device=self.device)
 
             if t % 9 == 0:
-                for i in range(0, n_samples, 10):
+                for i in range(0, n_samples, 5):
                     fig, ax = plt.subplots()
                     ax.imshow(cur[i, 0].cpu().detach().numpy(), cmap="gray")
+                    ax.set_axis_off()
+                    fig.tight_layout()
                     self.writer.add_figure("generation/{:03}".format(i), fig, global_step=self.n_steps - t - 1)
                     plt.close(fig)
 
