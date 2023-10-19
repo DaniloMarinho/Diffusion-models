@@ -9,7 +9,7 @@ from nets.tiny_unet import MyTinyUNet
 from diff_models.ddpm import DDPM
 
 from utils.data_loading import load_dataset
-from trainer import Trainer
+from sampler import Sampler
 
 if __name__ == "__main__":
     # Argument parsing
@@ -30,15 +30,6 @@ if __name__ == "__main__":
 
     network = MyTinyUNet()
     ddpm = DDPM(network, args.n_steps, device)
-    state_dict = torch.load(os.path.join(args.weights_path, "model.pt"))
-    ddpm.load_state_dict(state_dict)
 
-    writer = SummaryWriter(log_dir=args.weights_path)
-
-    ddpm.eval()
-    with torch.no_grad():
-        generated = ddpm.sample(args.n_samples, 1, 32, 32, writer)
-    generated = generated.cpu().detach().numpy()
-
-    writer.flush()
-    writer.close()
+    sampler = Sampler(ddpm, network, device, args.weights_path)
+    generated = sampler.sample(20, 1, 32, 32)
