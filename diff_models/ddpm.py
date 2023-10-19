@@ -14,6 +14,7 @@ class DDPM(nn.Module):
         super(DDPM, self).__init__()
 
         self.network = network.to(device)
+        self.device = device
 
         self.n_steps = n_steps
 
