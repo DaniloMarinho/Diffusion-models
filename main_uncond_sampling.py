@@ -30,12 +30,14 @@ if __name__ == "__main__":
 
     network = MyTinyUNet()
     ddpm = DDPM(network, args.n_steps, device)
-    state_dict = torch.load(os.path.join(args.weights_path, "model.pt"), map_location="cpu")
+    state_dict = torch.load(os.path.join(args.weights_path, "model.pt"))
     ddpm.load_state_dict(state_dict)
 
     writer = SummaryWriter(log_dir=args.weights_path)
 
-    generated = ddpm.sample(args.n_samples, 1, 32, 32, writer)
+    ddpm.eval()
+    with torch.no_grad():
+        generated = ddpm.sample(args.n_samples, 1, 32, 32, writer)
     generated = generated.cpu().detach().numpy()
 
     writer.flush()

@@ -35,9 +35,9 @@ class DDPM(nn.Module):
         return self.network(noisy, timesteps)
 
     def sample(self, n_samples, n_channels, h, w, writer=None):
-        cur = torch.randn(n_samples, n_channels, h, w)
+        cur = torch.randn(n_samples, n_channels, h, w).to(self.device)
 
-        timesteps = torch.linspace(self.n_steps - 1, 0, self.n_steps).long()
+        timesteps = torch.linspace(self.n_steps - 1, 0, self.n_steps).long().to(self.device)
         for t in tqdm(timesteps, total=len(timesteps)):
             time = torch.ones((n_samples, )) * t
             noise_coeff = self.betas[t] / (self.sqrt_alphas_cumprod_compl[t] * self.sqrt_alphas[t])
