@@ -40,7 +40,7 @@ class DDPM(nn.Module):
 
         timesteps = torch.linspace(self.n_steps - 1, 0, self.n_steps).long().to(self.device)
         for t in tqdm(timesteps, total=len(timesteps)):
-            time = torch.ones((n_samples, )) * t
+            time = torch.ones((n_samples, ), device=self.device) * t
             noise_coeff = self.betas[t] / (self.sqrt_alphas_cumprod_compl[t] * self.sqrt_alphas[t])
             cur = (1 / self.sqrt_alphas[t]) * (cur - noise_coeff * self.network(cur, time.long()))
             cur += torch.sqrt(self.betas[t]) * torch.randn(cur.shape)
