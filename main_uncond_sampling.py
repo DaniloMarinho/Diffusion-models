@@ -32,4 +32,4 @@ if __name__ == "__main__":
     ddpm = DDPM(network, args.n_steps, device)
 
     sampler = Sampler(ddpm, network, device, args.weights_path)
-    generated = sampler.sample(20, 1, 32, 32)
+    generated = sampler.sample(args.n_samples, 1, 32, 32)

@@ -1,4 +1,5 @@
 import argparse
+import json
 
 import torch.cuda
 from torch.utils.data import DataLoader
@@ -36,5 +37,8 @@ if __name__ == "__main__":
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
 
     # Train
-    trainer = Trainer(ddpm, train_dataloader, args.n_epochs, device, args.version)
+    trainer = Trainer(ddpm, train_dataloader, args.n_epochs, device, args.version, args)
     trainer.train()
+
+    with open(f"tb_logs/{args.version}/config.json", "w") as f:
+        json.dump(args, f)

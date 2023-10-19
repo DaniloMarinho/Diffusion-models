@@ -10,7 +10,8 @@ class Trainer:
                  train_dataloader,
                  n_epochs,
                  device,
-                 version):
+                 version,
+                 args):
 
         self.model = diffusion_model
         self.train_dataloader = train_dataloader
@@ -22,6 +23,7 @@ class Trainer:
         self.optim = torch.optim.Adam(self.model.parameters(), lr=2e-4)
 
         self.writer = SummaryWriter(log_dir=f"./tb_logs/{version}")
+        self.writer.add_text("config", str(args), global_step=0)
 
     def train_epoch(self, epoch):
         self.model.train()
