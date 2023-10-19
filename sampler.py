@@ -37,7 +37,7 @@ class Sampler:
             cur = (1 / self.sqrt_alphas[t]) * (cur - noise_coeff * self.model.network(cur, time.long()))
             cur += torch.sqrt(self.betas[t]) * torch.randn(cur.shape, device=self.device)
 
-            if t % 9 == 0:
+            if t % 50 == 0 or t == self.n_steps - 1:
                 for i in range(0, n_samples, 5):
                     fig, ax = plt.subplots()
                     ax.imshow(cur[i, 0].cpu().detach().numpy(), cmap="gray")
