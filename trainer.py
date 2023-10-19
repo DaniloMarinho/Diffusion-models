@@ -21,7 +21,7 @@ class Trainer:
         self.loss_fn = nn.MSELoss()
         self.optim = torch.optim.Adam(self.model.parameters(), lr=2e-4)
 
-        self.writer = SummaryWriter(log_dir=f"tb_logs/{version}")
+        self.writer = SummaryWriter(log_dir=f"./tb_logs/{version}")
 
     def train_epoch(self, epoch):
         self.model.train()
@@ -56,4 +56,4 @@ class Trainer:
                 self.train_epoch(ep)
         except KeyboardInterrupt:
             print("Training interrupted.")
-        torch.save(self.model.state_dict(), f"tb_logs/{self.version}/model.pt")
+        torch.save(self.model.state_dict(), f"./tb_logs/{self.version}/model.pt")
