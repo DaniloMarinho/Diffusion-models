@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 from tqdm import tqdm
@@ -33,7 +34,7 @@ class DDPM(nn.Module):
     def reverse(self, noisy, timesteps):
         return self.network(noisy, timesteps)
 
-    def sample(self, n_samples, n_channels, h, w):
+    def sample(self, n_samples, n_channels, h, w, writer=None):
         cur = torch.randn(n_samples, n_channels, h, w)
 
         timesteps = torch.linspace(self.n_steps - 1, 0, self.n_steps).long()
@@ -42,5 +43,10 @@ class DDPM(nn.Module):
             noise_coeff = self.betas[t] / (self.sqrt_alphas_cumprod_compl[t] * self.sqrt_alphas[t])
             cur = (1 / self.sqrt_alphas[t]) * (cur - noise_coeff * self.network(cur, time.long()))
             cur += torch.sqrt(self.betas[t]) * torch.randn(cur.shape)
+
+            if writer is not None:
+                fig, ax = plt.subplots()
+                ax.imshow(cur[0, 0].cpu().detach().numpy(), cmap="gray")
+                writer.add_figure("generation", fig, global_step=self.n_steps - t - 1)
 
         return cur
