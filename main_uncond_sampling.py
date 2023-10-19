@@ -1,5 +1,6 @@
 import argparse
 import os
+import json
 
 import torch.cuda
 import matplotlib.pyplot as plt
@@ -31,5 +32,12 @@ if __name__ == "__main__":
     network = MyTinyUNet()
     ddpm = DDPM(network, args.n_steps, device)
 
+    f = open(os.path.join(args.weights_path, "config.json"))
+    config = json.load(f)
+    c, h, w = None, None, None
+    if config["dataset"] == "MNIST":
+        c = 1
+        h = w = 32
+
     sampler = Sampler(ddpm, network, device, args.weights_path)
-    generated = sampler.sample(args.n_samples, 1, 32, 32)
+    generated = sampler.sample(args.n_samples, c, h, w)
