@@ -12,7 +12,7 @@ class Trainer:
                  device,
                  version):
 
-        self.model = diffusion_model.to(device)
+        self.model = diffusion_model
         self.train_dataloader = train_dataloader
         self.n_epochs = n_epochs
         self.device = device

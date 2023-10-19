@@ -7,15 +7,16 @@ class DDPM(nn.Module):
     def __init__(self,
                  network,
                  n_steps,
+                 device,
                  beta_start=1e-4,
                  beta_end=2e-2):
         super(DDPM, self).__init__()
 
-        self.network = network
+        self.network = network.to(device)
 
         self.n_steps = n_steps
 
-        self.betas = torch.linspace(beta_start, beta_end, n_steps)
+        self.betas = torch.linspace(beta_start, beta_end, n_steps).to(device)
 
         self.alphas = 1 - self.betas
         self.sqrt_alphas = torch.sqrt(self.alphas)

@@ -34,4 +34,3 @@ if __name__ == "__main__":
 
     generated = ddpm.sample(args.n_samples, 1, 32, 32)
     generated = generated.cpu().detach().numpy()
-    
