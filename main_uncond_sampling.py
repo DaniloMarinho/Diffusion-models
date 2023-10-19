@@ -29,10 +29,9 @@ if __name__ == "__main__":
 
     network = MyTinyUNet()
     ddpm = DDPM(network, args.n_steps)
-    state_dict = torch.load(args.weights)
+    state_dict = torch.load(args.weights, map_location="cpu")
     ddpm.load_state_dict(state_dict)
 
     generated = ddpm.sample(args.n_samples, 1, 32, 32)
     generated = generated.cpu().detach().numpy()
-    plt.imshow(generated[0, 0])
-    plt.show()
+    
