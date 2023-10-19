@@ -43,7 +43,7 @@ class DDPM(nn.Module):
             time = torch.ones((n_samples, ), device=self.device) * t
             noise_coeff = self.betas[t] / (self.sqrt_alphas_cumprod_compl[t] * self.sqrt_alphas[t])
             cur = (1 / self.sqrt_alphas[t]) * (cur - noise_coeff * self.network(cur, time.long()))
-            cur += torch.sqrt(self.betas[t]) * torch.randn(cur.shape)
+            cur += torch.sqrt(self.betas[t]) * torch.randn(cur.shape, device=self.device)
 
             if writer is not None:
                 fig, ax = plt.subplots()
