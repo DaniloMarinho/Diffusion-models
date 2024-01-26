@@ -45,9 +45,13 @@ class DDPM(nn.Module):
             cur = (1 / self.sqrt_alphas[t]) * (cur - noise_coeff * self.network(cur, time.long()))
             cur += torch.sqrt(self.betas[t]) * torch.randn(cur.shape, device=self.device)
 
-            if writer is not None:
-                fig, ax = plt.subplots()
-                ax.imshow(cur[0, 0].cpu().detach().numpy(), cmap="gray")
-                writer.add_figure("generation", fig, global_step=self.n_steps - t - 1)
+            if writer is not None and (t % 50 == 0 or t == self.n_steps - 1):
+                for i in range(0, n_samples, 5):
+                    fig, ax = plt.subplots()
+                    ax.imshow(cur[i, 0].cpu().detach().numpy(), cmap="gray")
+                    ax.set_axis_off()
+                    fig.tight_layout()
+                    writer.add_figure("generation/{:03}".format(i), fig, global_step=self.n_steps - t - 1)
+                    plt.close(fig)
 
         return cur

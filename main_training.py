@@ -4,8 +4,8 @@ import json
 import torch.cuda
 from torch.utils.data import DataLoader
 
-from nets.tiny_unet import MyTinyUNet
-from diff_models.ddpm import DDPM
+from models.tiny_unet import MyTinyUNet
+from diffusion.ddpm import DDPM
 
 from utils.data_loading import load_dataset
 from trainer import Trainer
