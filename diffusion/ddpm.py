@@ -35,18 +35,18 @@ class DDPM(nn.Module):
     def reverse(self, noisy, timesteps):
         return self.network(noisy, timesteps)
 
-    def sample(self, n_samples, n_channels, h, w, writer=None):
+    def sample(self, n_samples, n_channels, h, w, writer=None, verbose=True):
         cur = torch.randn(n_samples, n_channels, h, w).to(self.device)
 
         timesteps = torch.linspace(self.n_steps - 1, 0, self.n_steps).long().to(self.device)
-        for t in tqdm(timesteps, total=len(timesteps)):
+        for t in tqdm(timesteps, total=len(timesteps), disable=not verbose):
             time = torch.ones((n_samples, ), device=self.device) * t
             noise_coeff = self.betas[t] / (self.sqrt_alphas_cumprod_compl[t] * self.sqrt_alphas[t])
             cur = (1 / self.sqrt_alphas[t]) * (cur - noise_coeff * self.network(cur, time.long()))
             cur += torch.sqrt(self.betas[t]) * torch.randn(cur.shape, device=self.device)
 
-            if writer is not None and (t % 50 == 0 or t == self.n_steps - 1):
-                for i in range(0, n_samples, 5):
+            if writer is not None and (t + 1) % 50 == 0:
+                for i in range(0, n_samples):
                     fig, ax = plt.subplots()
                     ax.imshow(cur[i, 0].cpu().detach().numpy(), cmap="gray")
                     ax.set_axis_off()

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 
 class Trainer:
@@ -34,6 +35,7 @@ class Trainer:
             running_loss = 0.0
             for i, batch in pbar:
                 batch = batch[0].to(self.device)
+                bs, c, h, w = batch.shape
                 noise = torch.randn(batch.shape).to(self.device)
                 timesteps = torch.randint(0, self.model.n_steps, size=(batch.shape[0], )).long().to(self.device)
 
@@ -51,6 +53,17 @@ class Trainer:
                 self.writer.add_scalar("loss/train_step",
                                        loss.item(),
                                        global_step=epoch * len(self.train_dataloader) + i)
+                if (epoch + 1) % 5 == 0 and i == len(self.train_dataloader) - 1:
+                    cur = self.model.sample(8, c, h, w, verbose=False)
+                    n_samples = cur.shape[0]
+                    for j in range(n_samples):
+                        fig, ax = plt.subplots()
+                        ax.imshow(cur[j, 0].cpu().detach().numpy(), cmap="gray")
+                        ax.set_axis_off()
+                        fig.tight_layout()
+                        self.writer.add_figure("generation/{:02}".format(j), fig,
+                                               global_step=epoch * len(self.train_dataloader) + i)
+                        plt.close(fig)
 
     def train(self):
         try:
