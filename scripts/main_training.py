@@ -21,6 +21,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--dataset", "-d", type=str)
     parser.add_argument("--dataset_path", "-dp", type=str)
+
     parser.add_argument("--batch_size", "-bs", type=int, default=1024)
     parser.add_argument("--n_epochs", "-ne", type=int, default=50)
 
