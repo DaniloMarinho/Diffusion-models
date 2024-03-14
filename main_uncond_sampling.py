@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 
 from models.tiny_unet import MyTinyUNet
+from models.unet import UNet
 from diffusion.ddpm import DDPM
 
 from utils.data_loading import load_dataset
@@ -28,14 +29,14 @@ if __name__ == "__main__":
     # Model selection
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    network = MyTinyUNet()
+    network = UNet(8, init_dim=8, out_dim=3)
     ddpm = DDPM(network, args.n_steps, device)
     state_dict = torch.load(os.path.join(args.weights_path, "model.pt"))
     ddpm.load_state_dict(state_dict)
 
     f = open(os.path.join(args.weights_path, "config.json"))
     config = json.load(f)
-    c, h, w = None, None, None
+    c, h, w = 3, 128, 128
     if config["dataset"] == "MNIST":
         c = 1
         h = w = 32

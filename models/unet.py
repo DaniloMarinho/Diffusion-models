@@ -1,54 +1,126 @@
+import torch.nn as nn
 from models.unet_parts import *
-from utils.embedding import sinusoidal_embedding
 
 class UNet(nn.Module):
-    def __init__(self, n_channels,  n_steps=1000, time_emb_dim=100, bilinear=False):
-        super(UNet, self).__init__()
-        self.n_channels = n_channels
-        self.bilinear = bilinear
+    def __init__(
+        self,
+        dim,
+        init_dim=None,
+        out_dim=None,
+        dim_mults=(1, 2, 4, 8),
+        channels=3,
+        self_condition=False,
+        resnet_block_groups=4,
+    ):
+        super().__init__()
 
-        self.time_embed = nn.Embedding(n_steps, time_emb_dim)
-        self.time_embed.weight.data = sinusoidal_embedding(n_steps, time_emb_dim)
-        self.time_embed.requires_grad_(False)
+        # determine dimensions
+        self.channels = channels
+        self.self_condition = self_condition
+        input_channels = channels * (2 if self_condition else 1)
 
-        self.te_in = self._make_te(time_emb_dim, n_channels)
-        self.te_down1 = self._make_te(time_emb_dim, 64)
-        self.te_down2 = self._make_te(time_emb_dim, 128)
-        self.te_down3 = self._make_te(time_emb_dim, 256)
-        self.te_down4 = self._make_te(time_emb_dim, 512)
-        self.te_up1 = self._make_te(time_emb_dim, 1024)
-        self.te_up2 = self._make_te(time_emb_dim, 512)
-        self.te_up3 = self._make_te(time_emb_dim, 256)
-        self.te_up4 = self._make_te(time_emb_dim, 128)
-        self.te_out = self._make_te(time_emb_dim, 64)
+        init_dim = default(init_dim, dim)
+        self.init_conv = nn.Conv2d(input_channels, init_dim, 1, padding=0) # changed to 1 and 0 from 7,3
 
-        self.inc = (DoubleConv(n_channels, 64))
-        self.down1 = (Down(64, 128))
-        self.down2 = (Down(128, 256))
-        self.down3 = (Down(256, 512))
-        factor = 2 if bilinear else 1
-        self.down4 = (Down(512, 1024 // factor))
-        self.up1 = (Up(1024, 512 // factor, bilinear))
-        self.up2 = (Up(512, 256 // factor, bilinear))
-        self.up3 = (Up(256, 128 // factor, bilinear))
-        self.up4 = (Up(128, 64, bilinear))
-        self.outc = (OutConv(64, n_channels))
+        dims = [init_dim, *map(lambda m: dim * m, dim_mults)]
+        in_out = list(zip(dims[:-1], dims[1:]))
 
-    def forward(self, x, t):
-        t = self.time_embed(t)
-        n = len(x)
+        block_klass = partial(ResnetBlock, groups=resnet_block_groups)
 
-        x1 = self.inc(x + self.te_in(t).reshape(n, -1, 1, 1))
-        x2 = self.down1(x1 + self.te_down1(t).reshape(n, -1, 1, 1))
-        x3 = self.down2(x2 + self.te_down2(t).reshape(n, -1, 1, 1))
-        x4 = self.down3(x3 + self.te_down3(t).reshape(n, -1, 1, 1))
-        x5 = self.down4(x4 + self.te_down4(t).reshape(n, -1, 1, 1))
-        x = self.up1(x5, x4, self.te_up1(t).reshape(n, -1, 1, 1))
-        x = self.up2(x, x3, self.te_up2(t).reshape(n, -1, 1, 1))
-        x = self.up3(x, x2, self.te_up3(t).reshape(n, -1, 1, 1))
-        x = self.up4(x, x1, self.te_up4(t).reshape(n, -1, 1, 1))
-        x = self.outc(x + self.te_out(t).reshape(n, -1, 1, 1))
-        return x
+        # time embeddings
+        time_dim = dim * 4
 
-    def _make_te(self, dim_in, dim_out):
-        return nn.Sequential(nn.Linear(dim_in, dim_out), nn.SiLU(), nn.Linear(dim_out, dim_out))
+        self.time_mlp = nn.Sequential(
+            SinusoidalPositionEmbeddings(dim),
+            nn.Linear(dim, time_dim),
+            nn.GELU(),
+            nn.Linear(time_dim, time_dim),
+        )
+
+        # layers
+        self.downs = nn.ModuleList([])
+        self.ups = nn.ModuleList([])
+        num_resolutions = len(in_out)
+
+        for ind, (dim_in, dim_out) in enumerate(in_out):
+            is_last = ind >= (num_resolutions - 1)
+
+            self.downs.append(
+                nn.ModuleList(
+                    [
+                        block_klass(dim_in, dim_in, time_emb_dim=time_dim),
+                        block_klass(dim_in, dim_in, time_emb_dim=time_dim),
+                        Residual(PreNorm(dim_in, LinearAttention(dim_in))),
+                        Downsample(dim_in, dim_out)
+                        if not is_last
+                        else nn.Conv2d(dim_in, dim_out, 3, padding=1),
+                    ]
+                )
+            )
+
+        mid_dim = dims[-1]
+        self.mid_block1 = block_klass(mid_dim, mid_dim, time_emb_dim=time_dim)
+        self.mid_attn = Residual(PreNorm(mid_dim, Attention(mid_dim)))
+        self.mid_block2 = block_klass(mid_dim, mid_dim, time_emb_dim=time_dim)
+
+        for ind, (dim_in, dim_out) in enumerate(reversed(in_out)):
+            is_last = ind == (len(in_out) - 1)
+
+            self.ups.append(
+                nn.ModuleList(
+                    [
+                        block_klass(dim_out + dim_in, dim_out, time_emb_dim=time_dim),
+                        block_klass(dim_out + dim_in, dim_out, time_emb_dim=time_dim),
+                        Residual(PreNorm(dim_out, LinearAttention(dim_out))),
+                        Upsample(dim_out, dim_in)
+                        if not is_last
+                        else nn.Conv2d(dim_out, dim_in, 3, padding=1),
+                    ]
+                )
+            )
+
+        self.out_dim = default(out_dim, channels)
+
+        self.final_res_block = block_klass(dim * 2, dim, time_emb_dim=time_dim)
+        self.final_conv = nn.Conv2d(dim, self.out_dim, 1)
+
+    def forward(self, x, time, x_self_cond=None):
+        if self.self_condition:
+            x_self_cond = default(x_self_cond, lambda: torch.zeros_like(x))
+            x = torch.cat((x_self_cond, x), dim=1)
+
+        x = self.init_conv(x)
+        r = x.clone()
+
+        t = self.time_mlp(time)
+
+        h = []
+
+        for block1, block2, attn, downsample in self.downs:
+            x = block1(x, t)
+            h.append(x)
+
+            x = block2(x, t)
+            x = attn(x)
+            h.append(x)
+
+            x = downsample(x)
+
+        x = self.mid_block1(x, t)
+        x = self.mid_attn(x)
+        x = self.mid_block2(x, t)
+
+        for block1, block2, attn, upsample in self.ups:
+            x = torch.cat((x, h.pop()), dim=1)
+            x = block1(x, t)
+
+            x = torch.cat((x, h.pop()), dim=1)
+            x = block2(x, t)
+            x = attn(x)
+
+            x = upsample(x)
+
+        x = torch.cat((x, r), dim=1)
+
+        x = self.final_res_block(x, t)
+        return self.final_conv(x)
