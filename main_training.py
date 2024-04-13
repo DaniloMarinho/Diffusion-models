@@ -3,8 +3,8 @@ import json
 import os
 
 import pytorch_lightning as pl
-from lightning.pytorch.loggers import TensorBoardLogger
-from lightning.pytorch.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 from networks.tiny_unet import MyTinyUNet
 from networks.lucidrains_unet import Unet
