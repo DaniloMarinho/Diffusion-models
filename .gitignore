@@ -2,3 +2,5 @@ data/
 *__pycache__/
 .idea/
 tb_logs/
+.vscode/
+lightning_logs/
