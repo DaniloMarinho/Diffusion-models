@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
 from torchvision.transforms import transforms
 
-from typing import Optional
+from typing import Optional, Union, List
 
 
 class MNISTDataModule(pl.LightningDataModule):
@@ -11,6 +11,8 @@ class MNISTDataModule(pl.LightningDataModule):
                  root: str,
                  train_batch_size: int,
                  val_batch_size: int,
+                 transform_mean: Union[float, List[float]],
+                 transform_std: Union[float, List[float]],
                  shuffle: bool = True,
                  num_workers: int = 0,
                  pin_memory: bool = True,
@@ -24,11 +26,13 @@ class MNISTDataModule(pl.LightningDataModule):
         self.num_workers = num_workers
         self.pin_memory = pin_memory
         self.persistent_workers = persistent_workers
+        self.size = 32
+        self.n_channels = 1
 
         self.transform = transforms.Compose([
-            transforms.Resize(32),
+            transforms.Resize(self.size),
             transforms.ToTensor(),
-            transforms.Normalize([0.5], [0.5])
+            transforms.Normalize(transform_mean, transform_std)
         ])
 
     def setup(self, stage: Optional[str] = None):

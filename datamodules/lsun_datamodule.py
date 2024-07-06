@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 
-from typing import Optional
+from typing import Optional, Union, List
 
 from datasets.lsun_dataset import LSUNDataset
 
@@ -12,6 +12,8 @@ class LSUNDataModule(pl.LightningDataModule):
                  root: str,
                  train_batch_size: int,
                  val_batch_size: int,
+                 transform_mean: Union[float, List[float]],
+                 transform_std: Union[float, List[float]],
                  shuffle: bool = True,
                  num_workers: int = 0,
                  pin_memory: bool = True,
@@ -25,19 +27,19 @@ class LSUNDataModule(pl.LightningDataModule):
         self.num_workers = num_workers
         self.pin_memory = pin_memory
         self.persistent_workers = persistent_workers
+        self.size = 256
+        self.n_channels = 3
         
-        self.mean = [0.5, 0.5, 0.5]
-        self.std = [0.5, 0.5, 0.5]
         self.train_transform = transforms.Compose([
-            transforms.Resize(size=(256, 256)),
+            transforms.Resize(size=(self.size, self.size)),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize(mean=self.mean, std=self.std)
+            transforms.Normalize(transform_mean, transform_std)
         ])
         self.val_transform = transforms.Compose([
-            transforms.Resize(size=(256, 256)),
+            transforms.Resize(size=(self.size, self.size)),
             transforms.ToTensor(),
-            transforms.Normalize(mean=self.mean, std=self.std)
+            transforms.Normalize(transform_mean, transform_std)
         ])
 
     def setup(self, stage: Optional[str] = None):

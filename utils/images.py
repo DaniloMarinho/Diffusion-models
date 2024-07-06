@@ -1,18 +1,15 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 
-def rescale_normalized_image(image, mean, std):
-    if not isinstance(image, np.ndarray):
-        image = np.array(image)
-
-        # Rescale each channel
-    for c in range(3):
-        image[:, :, c] = image[:, :, c] * std[c] + mean[c]
-
-        # Clip to ensure the values are between 0 and 1
-    image = np.clip(image, 0, 1)
-
-    # Scale to 0-255 range for display
-    #image = (image * 255).astype(np.uint8)
-
-    return image
+def log_generations(logger, gen_imgs, folder, global_step, transform_mean, transform_std, verbose=False):
+    n_samples = gen_imgs.shape[0]
+    for i in tqdm(range(n_samples), disable=not verbose):
+        fig, ax = plt.subplots()
+        img = gen_imgs[i].cpu().detach().numpy().transpose(1, 2, 0)
+        ax.imshow((img - img.min()) / (img.max() - img.min()))
+        ax.set_axis_off()
+        fig.tight_layout()
+        logger.experiment.add_figure(f"{folder}/{i:03}", fig, global_step=global_step)
+        plt.close(fig)
