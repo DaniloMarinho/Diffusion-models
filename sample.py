@@ -1,20 +1,13 @@
 import argparse
 import json
-import os
-import ast
-from typing import Union, List
 
-import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.callbacks import ModelCheckpoint
 import torch
-import matplotlib.pyplot as plt
 
-from modules.lucidrains_unet import Unet
-from diffusion.ddpm import DDPM
+from modules import Unet
+from diffusion import DDPM
 
 from datamodules import datamodule_selector
-from utils.images import log_generations
 
 
 if __name__ == "__main__":
@@ -24,7 +17,7 @@ if __name__ == "__main__":
     # Network options
     parser.add_argument("--ckpt_path", type=str, required=True)
     parser.add_argument("--n_steps", type=int, default=1000)
-    parser.add_argument("--unet_dim", type=int, default=64)
+    parser.add_argument("--unet_dim", type=int, default=128)
     parser.add_argument("--unet_dim_mults", type=int, nargs="+", default=[1, 1, 2, 2, 4, 4])
 
     # Sampling options
@@ -53,7 +46,8 @@ if __name__ == "__main__":
                                      model=network,
                                      n_steps=args.n_steps,
                                      transform_mean=args.transform_mean,
-                                     transform_std=args.transform_std)
+                                     transform_std=args.transform_std,
+                                     dataset=args.dataset)
 
 
     datamodule = datamodule_selector(dataset=args.dataset,
@@ -76,13 +70,9 @@ if __name__ == "__main__":
                           height=datamodule.size,
                           width=datamodule.size,
                           log=True)
-    # log_generations(logger=logger,
-    #                 gen_imgs=samples,
-    #                 folder="samples",
-    #                 global_step=0,
-    #                 transform_mean=args.transform_mean,
-    #                 transform_std=args.transform_std,
-    #                 verbose=True)
+
+    with open(f"lightning_logs/{args.version}/config.json", "w") as f:
+        json.dump(vars(args), f)
 
     print("Sampling finished.")
 

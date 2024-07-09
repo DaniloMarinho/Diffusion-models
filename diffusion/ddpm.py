@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 from tqdm import tqdm
@@ -14,6 +13,7 @@ class DDPM(pl.LightningModule):
                  n_steps,
                  transform_mean,
                  transform_std,
+                 dataset,
                  lr=2e-4,
                  beta_start=1e-4,
                  beta_end=2e-2):
@@ -23,6 +23,7 @@ class DDPM(pl.LightningModule):
 
         self.n_steps = n_steps
 
+        self.dataset = dataset
         self.transform_mean = transform_mean
         self.transform_std = transform_std
         self.lr = lr
@@ -90,8 +91,8 @@ class DDPM(pl.LightningModule):
         loss = self.loss_fn(noise_pred, noise)
 
         self.log("loss/train", loss, prog_bar=True, on_step=True, on_epoch=True, logger=True, sync_dist=True)
-        if batch_idx % 1000 == 0:
-            gen_imgs = DDPM.sample(diffusion_model=self, logger=self.logger, n_samples=2, n_channels=c, height=h, width=w)
+        if batch_idx == 0:
+            gen_imgs = DDPM.sample(diffusion_model=self, logger=self.logger, n_samples=6, n_channels=c, height=h, width=w)
             log_generations(logger=self.logger,
                             gen_imgs=gen_imgs,
                             folder="training",
@@ -117,5 +118,8 @@ class DDPM(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        return [optimizer]
+        if self.dataset == "lsun_churches":
+            lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[15])
+            return [optimizer], [lr_scheduler]
+        return optimizer
 

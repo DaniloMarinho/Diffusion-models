@@ -1,15 +1,12 @@
 import argparse
 import json
-import os
-from typing import Union, List
 
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 
-from modules.tiny_unet import MyTinyUNet
-from modules.lucidrains_unet import Unet
-from diffusion.ddpm import DDPM
+from modules import Unet
+from diffusion import DDPM
 
 from datamodules import datamodule_selector
 
@@ -20,7 +17,7 @@ if __name__ == "__main__":
 
     # Network options
     parser.add_argument("--n_steps", type=int, default=1000)
-    parser.add_argument("--unet_dim", type=int, default=64)
+    parser.add_argument("--unet_dim", type=int, default=128)
     parser.add_argument("--unet_dim_mults", type=int, nargs="+", default=[1, 1, 2, 2, 4, 4])
 
     # DataModule options
@@ -36,7 +33,6 @@ if __name__ == "__main__":
     # Training options
     parser.add_argument("--lr", type=float, default=2e-4)
     parser.add_argument("--n_epochs", type=int, default=100)
-    parser.add_argument("--devices", type=int, default=1)
 
     # Logging options
     parser.add_argument("--version", "-v", type=str, required=True)
@@ -49,7 +45,8 @@ if __name__ == "__main__":
                 n_steps=args.n_steps,
                 transform_mean=args.transform_mean,
                 transform_std=args.transform_std,
-                lr=args.lr)
+                lr=args.lr,
+                dataset=args.dataset)
 
 
     datamodule = datamodule_selector(dataset=args.dataset,
@@ -68,7 +65,7 @@ if __name__ == "__main__":
     lr_monitor = LearningRateMonitor()
     trainer = pl.Trainer(logger=logger,
                          accelerator="auto",
-                         devices=args.devices,
+                         devices="auto",
                          strategy="ddp",
                          max_epochs=args.n_epochs,
                          limit_val_batches=0.0,
