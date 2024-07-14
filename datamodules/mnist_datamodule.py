@@ -30,6 +30,7 @@ class MNISTDataModule(pl.LightningDataModule):
         self.n_channels = 1
 
         self.transform = transforms.Compose([
+            transforms.Grayscale(num_output_channels=3),
             transforms.Resize(self.size),
             transforms.ToTensor(),
             transforms.Normalize(transform_mean, transform_std)

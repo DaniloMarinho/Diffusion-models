@@ -59,8 +59,8 @@ if __name__ == "__main__":
                                      transform_std=args.transform_std)
     
 
-    logger = TensorBoardLogger(save_dir=".",
-                               version=args.version)
+    logger = TensorBoardLogger(save_dir=".", version=args.version)
+    logger.experiment.add_text("hyperparameters", str(vars(args)))
     ckpt_callback = ModelCheckpoint(dirpath=f"lightning_logs/{args.version}")
     lr_monitor = LearningRateMonitor()
     trainer = pl.Trainer(logger=logger,
@@ -72,8 +72,5 @@ if __name__ == "__main__":
                          callbacks=[ckpt_callback, lr_monitor])
 
     trainer.fit(ddpm, datamodule)
-    
 
-    with open(f"lightning_logs/{args.version}/config.json", "w") as f:
-        json.dump(vars(args), f)
-
+    print("Training finished.")

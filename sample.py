@@ -61,8 +61,7 @@ if __name__ == "__main__":
     
 
     logger = TensorBoardLogger(save_dir=".", version=args.version)
-
-    ddpm.eval()
+    logger.experiment.add_text("hyperparameters", str(vars(args)))
     samples = DDPM.sample(diffusion_model=ddpm,
                           logger=logger,
                           n_samples=args.n_samples,
@@ -71,8 +70,4 @@ if __name__ == "__main__":
                           width=datamodule.size,
                           log=True)
 
-    with open(f"lightning_logs/{args.version}/config.json", "w") as f:
-        json.dump(vars(args), f)
-
     print("Sampling finished.")
-

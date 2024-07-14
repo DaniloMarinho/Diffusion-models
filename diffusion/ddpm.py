@@ -57,6 +57,8 @@ class DDPM(pl.LightningModule):
         transform_mean = diffusion_model.transform_mean
         transform_std = diffusion_model.transform_std
 
+        diffusion_model.eval()
+
         with torch.no_grad():
             cur = torch.randn(n_samples, n_channels, height, width, device=device)
 
@@ -92,7 +94,7 @@ class DDPM(pl.LightningModule):
 
         self.log("loss/train", loss, prog_bar=True, on_step=True, on_epoch=True, logger=True, sync_dist=True)
         if batch_idx == 0:
-            gen_imgs = DDPM.sample(diffusion_model=self, logger=self.logger, n_samples=6, n_channels=c, height=h, width=w)
+            gen_imgs = DDPM.sample(diffusion_model=self, logger=self.logger, n_samples=4, n_channels=c, height=h, width=w)
             log_generations(logger=self.logger,
                             gen_imgs=gen_imgs,
                             folder="training",
@@ -118,8 +120,9 @@ class DDPM(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        if self.dataset == "lsun_churches":
-            lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[15])
-            return [optimizer], [lr_scheduler]
-        return optimizer
 
+        if self.dataset == "lsun_churches":
+            lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[15], gamma=0.1)
+            return [optimizer], [lr_scheduler]
+        
+        return optimizer
