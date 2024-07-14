@@ -8,8 +8,8 @@ U-Net was taken from [2] to focus on the diffusion implementation.
 
 Unconditional generation, 30 epochs on LSUN Churches with learning rate ``2e-4``. -->
 
-<img src="assets/gen_01.gif" alt="gen1" width="280"/>
-<img src="assets/gen_02.gif" alt="gen2" width="280"/>
+<img src="assets/gen_01.gif" alt="gen1" width="500"/>
+<img src="assets/gen_02.gif" alt="gen2" width="500"/>
 
 ### Usage
 
